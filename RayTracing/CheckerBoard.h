@@ -1,5 +1,5 @@
 #pragma once
-#include "Shape.h"
+#include "Macros.h"
 class CheckerBoard : public Shape
 {
 public:
@@ -10,5 +10,8 @@ public:
 	~CheckerBoard();
 
 	void toString();
+	Vector3f getNormal();
+	double intersect(Ray ray);
+	ColorRGB getColorAt(Point3f p);
 };
 

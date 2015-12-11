@@ -1,5 +1,5 @@
 #pragma once
-#include "Shape.h"
+#include "Macros.h"
 
 class Triangle : public Shape
 {
@@ -9,5 +9,7 @@ public:
 	~Triangle();
 
 	void toString();
+	double intersect(Ray r);
+	Vector3f getNormalAt(Point3f p);
 };
 

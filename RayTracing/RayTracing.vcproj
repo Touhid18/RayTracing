@@ -175,7 +175,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\ColorRGB.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\Cylinder.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Point3f.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Ray.cpp"
 				>
 			</File>
 			<File
@@ -198,6 +210,10 @@
 				RelativePath=".\Triangle.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\Vector3f.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -205,11 +221,35 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\bitmap_image.hpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CheckerBoard.h"
 				>
 			</File>
 			<File
+				RelativePath=".\Color.h"
+				>
+			</File>
+			<File
+				RelativePath=".\ColorRGB.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Cylinder.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Macros.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Point3f.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Ray.h"
 				>
 			</File>
 			<File
@@ -233,7 +273,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Tracer.h"
+				>
+			</File>
+			<File
 				RelativePath=".\Triangle.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Vector3f.h"
 				>
 			</File>
 		</Filter>

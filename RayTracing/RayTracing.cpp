@@ -1,32 +1,9 @@
 // RayTracing.cpp : Defines the entry point for the console application.
 //
-
-#include "stdafx.h"
-#include<stdio.h>
-#include<stdlib.h>
-#include<math.h>
-#include<iostream>
-#include<vector>
-#include "CheckerBoard.h"
-#include "Cylinder.h"
-#include "Shape.h"
-#include "Sphere.h"
-#include "Triangle.h"
-
-using namespace std;
-
-#include<GL/glut.h>
 #include "RayTracing.h"
-
-#define BLACK 0, 0, 0
-#define PI_VAL acos(-1.0)
-
-#define CHK_BRD_SZ 1000
-//#define MAX_LT_SRC_CNT 3
-//#define MAX_SPHERE_CNT 4
-//#define MAX_TRIANG_CNT 1
-//#define MAX_CYLLINDER_CNT 3
-//#define MAX_CHKR_BRD_CNT 3
+#include "Macros.h"
+#include "bitmap_image.hpp"
+using namespace std;
 
 int recDepth, pixel;
 int nObj;
@@ -44,26 +21,18 @@ double difPointLightAngle; // in radian
 bool canDrawGrid;
 GLUquadric* IDquadric = gluNewQuadric();
 
-struct Point3D {
-	float x, y, z;
+Point3f camPos, camLookAt, camUpDir;
+vector<Point3f> lightSources;
 
-	Point3D() { x = y = z = 0; }
-	Point3D(float ax, float ay, float az) {
-		x = ax; y = ay; z = az;
-	}
-};
-Point3D camPos, camLookAt, camUpDir;
-vector<Point3D> lightSources;
-
-Point3D crossProduct(Point3D a, Point3D b) {
-	Point3D p(a.y*b.z - a.z*b.y,
+Point3f crossProduct(Point3f a, Point3f b) {
+	Point3f p(a.y*b.z - a.z*b.y,
 		a.z*b.x - a.x*b.z,
 		a.x*b.y - a.y*b.x);
 	return p;
 }
 
-Point3D diffVector(Point3D a, Point3D b) {
-	Point3D p(a.x - b.x, a.y - b.y, a.z - b.z);
+Point3f diffVector(Point3f a, Point3f b) {
+	Point3f p(a.x - b.x, a.y - b.y, a.z - b.z);
 	return p;
 }
 
@@ -224,23 +193,173 @@ void setupDiffuseLightEffect()
 	glLightfv(GL_LIGHT0, GL_POSITION, lightDir);
 
 
-	//effect of local light source: point diffuse light
-	/**/
-	// GLfloat position[] = {-10.0, -10.0, 5.0, 1.0}; Positioned at (-10, -10, 5)
 
-	//object being illuminated
-	GLfloat mat_ambient[] = { 0.0, 0.0, 1.0, 1.0 };
-	GLfloat mat_diffuse[] = { 0.0, 0.0, 1.0, 1.0 };
-	GLfloat mat_specular[] = { 0.5, 0.5, 0.5, 1.0 }; //equal to the light source
-	GLfloat low_shininess[] = { 5.0 };
-	GLfloat mid_shininess[] = { 50.0 };
-	GLfloat high_shininess[] = { 100.0 };
-	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-	glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
-	glMaterialfv(GL_FRONT, GL_EMISSION, unset);
 }
+
+#pragma region Helper-methods
+/*template<typename T> class Vec_3 
+{ 
+public: 
+    T x, y, z; 
+    Vec3() : x(T(0)), y(T(0)), z(T(0)) {} 
+    Vec3(T xx) : x(xx), y(xx), z(xx) {} 
+    Vec3(T xx, T yy, T zz) : x(xx), y(yy), z(zz) {} 
+
+    Vec3& normalize() 
+    { 
+        T nor2 = length2(); 
+        if (nor2 > 0) { 
+            T invNor = 1 / sqrt(nor2); 
+            x *= invNor, y *= invNor, z *= invNor; 
+        } 
+        return *this; 
+    } 
+    Vec3<T> operator * (const T &f) const { 
+		return Vec3<T>(x * f, y * f, z * f); 
+	} 
+    Vec3<T> operator * (const Vec3<T> &v) const { 
+		return Vec3<T>(x * v.x, y * v.y, z * v.z); 
+	} 
+    T dot(const Vec3<T> &v) const {
+		return x * v.x + y * v.y + z * v.z; 
+	} 
+    Vec3<T> operator - (const Vec3<T> &v) const {
+		return Vec3<T>(x - v.x, y - v.y, z - v.z); 
+	} 
+    Vec3<T> operator + (const Vec3<T> &v) const { 
+		return Vec3<T>(x + v.x, y + v.y, z + v.z); 
+	} 
+    Vec3<T>& operator += (const Vec3<T> &v) { 
+		x += v.x, y += v.y, z += v.z; return *this; 
+	} 
+    Vec3<T>& operator *= (const Vec3<T> &v) { 
+		x *= v.x, y *= v.y, z *= v.z; 
+		return *this; 
+	} 
+    Vec3<T> operator - () const { 
+		return Vec3<T>(-x, -y, -z); 
+	} 
+    T length2() const { 
+		return x * x + y * y + z * z; 
+	} 
+    T length() const { 
+		return sqrt(length2()); 
+	} 
+}; 
+typedef Vec3<float> Vec3f; 
+
+class SphereR : public Sphere{
+	
+    Vec3f center2;                           /// position of the sphere 
+    float radius2;                  /// sphere radius and radius^2 
+    Vec3f surfaceColor, emissionColor;      /// surface color and emission (light) 
+    float transparency, reflection;         /// surface transparency and reflectivity 
+    Sphere( 
+        const Vec3f &c, 
+        const float &r, 
+        const Vec3f &sc, 
+        const float &refl = 0, 
+        const float &transp = 0, 
+        const Vec3f &ec = 0) : 
+        center(c), radius(r), radius2(r * r), surfaceColor(sc), emissionColor(ec), 
+        transparency(transp), reflection(refl) 
+    {   }
+
+	bool intersect(const Vec3f &rayorig, const Vec3f &raydir, float &t0, float &t1) const 
+    { 
+        Vec3f l = center - rayorig; 
+        float tca = l.dot(raydir); 
+        if (tca < 0) return false; 
+        float d2 = l.dot(l) - tca * tca; 
+        if (d2 > radius2) return false; 
+        float thc = sqrt(radius2 - d2); 
+        t0 = tca - thc; 
+        t1 = tca + thc; 
+ 
+        return true; 
+    } 
+}
+
+Vec3f traceRayOnSpheres( 
+    const Vec3f &rayorig, const Vec3f &raydir, const vector<Sphere> &spheres, 
+    const int &depth) 
+{ 
+    float tnear = INFINITY; 
+    const Sphere* sphere = NULL; 
+    // find intersection of this ray with the sphere in the scene
+    for (unsigned i = 0; i < spheres.size(); ++i) { 
+        float t0 = INFINITY, t1 = INFINITY; 
+        if (spheres[i].intersect(rayorig, raydir, t0, t1)) { 
+            if (t0 < 0) t0 = t1; 
+            if (t0 < tnear) { 
+                tnear = t0; 
+                sphere = &spheres[i]; 
+            } 
+        } 
+    } 
+    // if there's no intersection return black or background color
+    if (!sphere) return Vec3f(2); 
+    Vec3f surfaceColor = 0; // color of the ray/surface of the object intersected by the ray 
+    Vec3f phit = rayorig + raydir * tnear; // point of intersection 
+    Vec3f nhit = phit - sphere->center; // normal at the intersection point 
+    nhit.normalize(); // normalize normal direction 
+    // If the normal and the view direction are not opposite to each other
+    // reverse the normal direction. That also means we are inside the sphere so set
+    // the inside bool to true. Finally reverse the sign of IdotN which we want
+    // positive.
+    float bias = 1e-4; // add some bias to the point from which we will be tracing 
+    bool inside = false; 
+    if (raydir.dot(nhit) > 0) nhit = -nhit, inside = true; 
+    if ((sphere->transparency > 0 || sphere->reflection > 0) && depth < recDepth) { 
+        float facingratio = -raydir.dot(nhit); 
+        // change the mix value to tweak the effect
+        float fresneleffect = mix(pow(1 - facingratio, 3), 1, 0.1); 
+        // compute reflection direction (not need to normalize because all vectors
+        // are already normalized)
+        Vec3f refldir = raydir - nhit * 2 * raydir.dot(nhit); 
+        refldir.normalize(); 
+        Vec3f reflection = trace(phit + nhit * bias, refldir, spheres, depth + 1); 
+        Vec3f refraction = 0; 
+        // if the sphere is also transparent compute refraction ray (transmission)
+        if (sphere->transparency) { 
+            float ior = 1.1, eta = (inside) ? ior : 1 / ior; // are we inside or outside the surface? 
+            float cosi = -nhit.dot(raydir); 
+            float k = 1 - eta * eta * (1 - cosi * cosi); 
+            Vec3f refrdir = raydir * eta + nhit * (eta *  cosi - sqrt(k)); 
+            refrdir.normalize(); 
+            refraction = 1.0; //trace(phit - nhit * bias, refrdir, spheres, depth + 1); 
+        } 
+        // the result is a mix of reflection and refraction (if the sphere is transparent)
+        surfaceColor = ( 
+            reflection * fresneleffect + 
+            refraction * (1 - fresneleffect) * sphere->transparency) * sphere->surfaceColor; 
+    } 
+    else { 
+        // it's a diffuse object, no need to raytrace any further
+        for (unsigned i = 0; i < spheres.size(); ++i) { 
+            if (spheres[i].emissionColor.x > 0) { 
+                // this is a light
+                Vec3f transmission = 1; 
+                Vec3f lightDirection = spheres[i].center - phit; 
+                lightDirection.normalize(); 
+                for (unsigned j = 0; j < spheres.size(); ++j) { 
+                    if (i != j) { 
+                        float t0, t1; 
+                        if (spheres[j].intersect(phit + nhit * bias, lightDirection, t0, t1)) { 
+                            transmission = 0; 
+                            break; 
+                        } 
+                    } 
+                } 
+                surfaceColor += sphere->surfaceColor * transmission * 
+                std::max(float(0), nhit.dot(lightDirection)) * spheres[i].emissionColor; 
+            } 
+        } 
+    } 
+ 
+    return surfaceColor + sphere->emissionColor; 
+}*/ 
+#pragma endregion
 
 #pragma region Offline-specific custom-drawing functions
 
@@ -248,9 +367,9 @@ GLenum avLights[] = {GL_LIGHT0, GL_LIGHT1, GL_LIGHT2, GL_LIGHT3,
 						GL_LIGHT4, GL_LIGHT5, GL_LIGHT6, GL_LIGHT7};
 void showDifLights(){
 	glColor3f(1.0, 1.0, 1.0);
-	for (vector<Point3D>::size_type iv = 0; iv < lightSources.size(); iv++) {
+	for (vector<Point3f>::size_type iv = 0; iv < lightSources.size(); iv++) {
 		glPushMatrix(); {
-			Point3D p(lightSources[iv]);
+			Point3f p(lightSources[iv]);
 			
 			GLfloat position[] = { p.x, p.y, p.z };
 			glLightfv(avLights[iv], GL_POSITION, position);
@@ -335,10 +454,270 @@ void drawTriangle(){
 
 #pragma endregion
 
+#pragma region Tracing codes
+
+ColorRGB traceScene(Ray r, Point3f p, int depth){
+	if(depth>=recDepth)
+		return ColorRGB(0,0,0);
+	
+	double mn= MAX_INT;
+	int indx;
+	int type=0;
+
+	for (vector<CheckerBoard>::size_type ic = 0; ic < chBoards.size(); ic++) {
+		double dist = chBoards[ic].intersect(r);
+		if(dist<0)continue;
+		if(dist<mn){
+			mn = dist;
+			indx = ic;
+			type = 1; // CheckerBoard
+		}
+	}
+	for (vector<Sphere>::size_type is = 0; is < spheres.size(); is++) {
+		double dist = spheres[is].intersect(r);
+		if(dist<0)continue;
+		if(dist<mn){
+			mn = dist;
+			indx = is;
+			type = 2; // Sphere
+		}
+	}
+	/*for (vector<Triangle>::size_type it = 0; it < triangles.size(); it++) {
+		double dist = triangles[it].intersect(r);
+		if(dist<0)continue;
+		if(dist<mn){
+			mn = dist;
+			indx = it;
+			type = 3; // Triangle
+		}
+	}
+	for (vector<Cylinder>::size_type iy = 0; iy < cylinders.size(); iy++) {
+		double dist = cylinders[iy].intersect(r);
+		if(dist<0)continue;
+		if(dist<mn){
+			mn = dist;
+			indx = iy;
+			type = 4; // Cylinder
+		}
+	}*/
+	Vector3f origin(r.originPoint.x, r.originPoint.y, r.originPoint.z);
+
+	if(type==1)		// the ray hits the checker-board
+    {
+		double dist = mn;
+		CheckerBoard ground(chBoards[indx]);
+
+		Vector3f v = origin+r.dir.mult(dist); //intersection point
+		Point3f p(v.x,v.y,v.z);
+		Vector3f normal = ground.getNormal();
+
+		ColorRGB col = ground.getColorAt(p).clip().to256Range();
+		// printf("\n\nGround color: %f %f %f\n\n", col.r, col.g, col.b);
+		if(col.r<100 && col.g<100 && col.b>200){
+			printf("CheckerBoard: how come!! RGB=%f,%f,%f :( :(\n", col.r, col.g, col.b);
+		}
+
+		col.r *= ground.ambCoeff;
+		col.g *= ground.ambCoeff;
+		col.b *= ground.ambCoeff;
+
+		Vector3f ci,si,reflected,ct,st,refracted;
+		ci = normal.mult((-r.dir).dot(normal));
+		si = ci+r.dir;
+
+		reflected = ci+si;
+
+		Ray reflect_ray(p,reflected);
+
+		ColorRGB reflect_col= traceScene(reflect_ray,p,depth+1);
+
+		col.r += reflect_col.r;
+		col.g += reflect_col.g;
+		col.b += reflect_col.b;
+
+		for (vector<Point3f>::size_type i = 0; i < lightSources.size(); i++) {
+			Vector3f lm = Vector3f(lightSources[i].x - p.x,
+				lightSources[i].y - p.y,
+				lightSources[i].z - p.z);
+			Vector3f n = normal;
+			Vector3f rm = n.mult(2*(lm.dot(n)))-lm;
+			Vector3f v = r.dir;
+
+			lm.normalize();
+			n.normalize();
+			rm.normalize();
+			v.normalize();
+
+			col.r += ground.difCoeff*lm.dot(n) 
+				+ ground.specCoeff*(pow((double)rm.dot(v),(double)ground.specExp));
+			col.g += ground.difCoeff*lm.dot(n) 
+				+ ground.specCoeff*(pow((double)rm.dot(v),(double)ground.specExp));
+			col.b += ground.difCoeff*lm.dot(n) 
+				+ ground.specCoeff*(pow((double)rm.dot(v),(double)ground.specExp));
+
+		}
+		col.r = maxV(0.0,minV(col.r,1.0));
+		col.g = maxV(0.0,minV(col.g,1.0));
+		col.b = maxV(0.0,minV(col.b,1.0));
+		return col;
+	}
+	else if(type==2){//hits a sphere
+		Sphere sp(spheres[indx]);
+		Vector3f v = origin+r.dir.mult(mn); //intersection point
+		Point3f p(v.x,v.y,v.z);
+		Vector3f normal = sp.getNormalAt(p);
+
+		ColorRGB col(sp.baseColor[0], sp.baseColor[1], sp.baseColor[2]);
+		// return col;
+
+		col.r *= sp.ambCoeff;
+		col.g *= sp.ambCoeff;
+		col.b *= sp.ambCoeff;
+
+		Vector3f ci,si,reflected,ct,st,refracted;
+		ci = normal.mult((-r.dir).dot(normal));
+		si = ci+r.dir;
+
+		reflected = ci+si;
+		reflected.normalize();
+		Ray reflect_ray(p,reflected);
+
+		ColorRGB reflect_col = traceScene(reflect_ray,p,depth+1);
+
+		col.r += reflect_col.r * sp.refCoeff;
+		col.g += reflect_col.g * sp.refCoeff;
+		col.b += reflect_col.b * sp.refCoeff;
+
+		for (vector<Point3f>::size_type i = 0; i < lightSources.size(); i++) {
+				Vector3f lm = Vector3f(lightSources[i].x - p.x,
+					 lightSources[i].y - p.y,
+					 lightSources[i].z - p.z);
+				Vector3f n = normal;
+				Vector3f rm = n.mult(2*(lm.dot(n)))-lm;
+				Vector3f v = r.dir;
+
+				lm.normalize();
+				n.normalize();
+				rm.normalize();
+				v.normalize();
+
+				col.r += sp.difCoeff*lm.dot(n) 
+					+ sp.specCoeff*(pow((double)rm.dot(v),(double)sp.specExp));
+				col.g += sp.difCoeff*lm.dot(n) 
+					+ sp.specCoeff*(pow((double)rm.dot(v),(double)sp.specExp));
+				col.b += sp.difCoeff*lm.dot(n) 
+					+ sp.specCoeff*(pow((double)rm.dot(v),(double)sp.specExp));
+			}
+
+			col.r = maxV(0.0,minV(col.r,1.0));
+			col.g = maxV(0.0,minV(col.g,1.0));
+			col.b = maxV(0.0,minV(col.b,1.0));
+
+
+			return col;
+	}
+	else if(type==3)
+	{//hits a triangle
+		Triangle tr(triangles[indx]);
+		Vector3f v = origin+r.dir.mult(mn); //intersection point
+		Point3f p(v.x,v.y,v.z);
+		Vector3f normal = tr.getNormalAt(p);
+
+		ColorRGB col(tr.baseColor[0], tr.baseColor[1], tr.baseColor[2]);
+		//return col;
+
+		/*col.r *= sp.ambCoeff;
+		col.g *= sp.ambCoeff;
+		col.b *= sp.ambCoeff;
+
+		Vector3f ci,si,reflected,ct,st,refracted;
+		ci = normal.mult((-r.dir).dot(normal));
+		si = ci+r.dir;
+
+		reflected = ci+si;
+		reflected.normalize();
+		Ray reflect_ray(p,reflected);
+
+		ColorRGB reflect_col = traceScene(reflect_ray,p,depth+1);
+
+		col.r += reflect_col.r * sp.refCoeff;
+		col.g += reflect_col.g * sp.refCoeff;
+		col.b += reflect_col.b * sp.refCoeff;
+
+		for (vector<Point3f>::size_type i = 0; i < lightSources.size(); i++) {
+				Vector3f lm = Vector3f(lightSources[i].x - p.x,
+					 lightSources[i].y - p.y,
+					 lightSources[i].z - p.z);
+				Vector3f n = normal;
+				Vector3f rm = n.mult(2*(lm.dot(n)))-lm;
+				Vector3f v = r.dir;
+
+				lm.normalize();
+				n.normalize();
+				rm.normalize();
+				v.normalize();
+
+				col.r += sp.difCoeff*lm.dot(n) 
+					+ sp.specCoeff*(pow((double)rm.dot(v),(double)sp.specExp));
+				col.g += sp.difCoeff*lm.dot(n) 
+					+ sp.specCoeff*(pow((double)rm.dot(v),(double)sp.specExp));
+				col.b += sp.difCoeff*lm.dot(n) 
+					+ sp.specCoeff*(pow((double)rm.dot(v),(double)sp.specExp));
+			}
+
+			col.r = maxV(0.0,minV(col.r,1.0));
+			col.g = maxV(0.0,minV(col.g,1.0));
+			col.b = maxV(0.0,minV(col.b,1.0));
+
+
+			return col;*/
+	}/**/
+
+	return ColorRGB(0,0,0);
+}
+
+void traceFullWorld(){
+	printf("\nTracing the world ...\n");
+	bitmap_image image(pixel, pixel);
+	Point3f cop = camPos;
+
+	Vector3f up(camUpDir.x, camUpDir.y, camUpDir.z);
+	// n = eye-look, 
+	// u = look X up =right, 
+	// v = right X look = up
+    Vector3f n(camPos.x - camLookAt.x, camPos.y - camLookAt.y, camPos.z - camLookAt.z); // make n
+    Vector3f u(up.cross(n)); // make u = up X n
+    n.normalize(); u.normalize(); // make them unit length
+    Vector3f v(n.cross(u)); // make v = n X u
+	
+	for(int i=0; i<pixel; i++){
+		for(int j=0; j<pixel; j++){
+			double xNorm = 1.0 * i / pixel;
+			double zNorm = 1.0 * j / pixel;
+
+			
+			Vector3f camdir = -n;
+			Vector3f right = u;
+			Vector3f up = v;
+			Vector3f dir = camdir 
+							+ right.mult(xNorm)
+							+ up.mult(zNorm);
+			dir.normalize();
+			
+			Ray r(cop,dir);
+			ColorRGB col = traceScene(r,cop,0).to256Range();
+
+			image.set_pixel(i,j,col.r,col.g,col.b);
+		}
+	}
+	image.save_image("test.bmp");
+	printf("************ Image traced ************\n");
+}
+#pragma endregion 
 
 #pragma region Camera movements
 void camStrafe(int dir) {
-	Point3D alongVect = crossProduct(camUpDir, diffVector(camPos, camLookAt));
+	Point3f alongVect = crossProduct(camUpDir, diffVector(camPos, camLookAt));
 	alongVect.x *= .1;
 	alongVect.y *= .1;
 	alongVect.z *= .1;
@@ -364,8 +743,8 @@ void camFly(int dir) {
 }
 
 void camYawn(int dir) {
-	Point3D d = diffVector(camPos, camLookAt);
-	Point3D alongVect = crossProduct(camUpDir, d);
+	Point3f d = diffVector(camPos, camLookAt);
+	Point3f alongVect = crossProduct(camUpDir, d);
 
 	float dx = camPos.x - camLookAt.x;
 	float dy = camPos.y - camLookAt.y;
@@ -388,33 +767,32 @@ void camYawn(int dir) {
 void keyboardListener(unsigned char key, int x, int y) {
 	switch (key) {
 
-	case '1':	// Pitch (looking up) 
-				// cameraAngleDelta = -cameraAngleDelta;
-		camLookAt.z += 10;
-		break;
-
-	case '2':	// Pitch (looking down) 
-				// cameraAngleDelta *= 1.1;
-		camLookAt.z -= 10;
-		break;
-
-	case '3':	//	Roll (twisting left)
-				// cameraAngleDelta /= 1.1;
-		camLookAt.x += 10;
-		break;
-
-	case '4': // Roll (twisting right)
-		camLookAt.x -= 10;
-		break;
-
-	case '5': // Yaw (looking left) 
+	case '1':	// Yaw (looking left) 
 			  // camLookAt.y += 10;
 		camYawn(1);
 		break;
 
-	case '6': // Yaw (looking right)
+	case '2':	 // Yaw (looking right)
 			  // camLookAt.y -= 10;
 		camYawn(-1);
+		break;
+
+	case '3':	
+		// Pitch (looking up) 
+		camLookAt.z += 10;
+		break;
+
+	case '4': 
+		// Pitch (looking down) 
+		camLookAt.z -= 10;
+		break;
+
+	case '5': //	Roll (twisting left)
+		camLookAt.x += 10;
+		break;
+
+	case '6':// Roll (twisting right)
+		camLookAt.x -= 10;
 		break;
 
 	case '9':
@@ -436,14 +814,14 @@ void specialKeyListener(int key, int x, int y) {
 	case GLUT_KEY_UP: // Walk (forward w.r.t. current position)
 					  /*if (cameraRadius > 10)
 					  cameraRadius -= 10;*/
-		camPos.x -= 10;
-		camLookAt.x -= 10;
+		camPos.z -= 10;
+		camLookAt.z -= 10;
 		break;
 
 	case GLUT_KEY_DOWN: // Walk (backward w.r.t. current position)
 						// cameraRadius += 10; // 
-		camPos.x += 10;
-		camLookAt.x += 10;
+		camPos.z += 10;
+		camLookAt.z += 10;
 		break;
 
 	case GLUT_KEY_LEFT: // Strafing (left side w.r.t. current position) 
@@ -539,6 +917,7 @@ void mouseListener(int button, int state, int x, int y) {
 	case GLUT_LEFT_BUTTON:
 		if (state == GLUT_DOWN) {
 			// TODO Render & generate image
+			traceFullWorld();
 		}
 		break;
 
@@ -595,9 +974,9 @@ void init() {
 	// cameraHeight = 100;
 	//cameraRadius = 75;
 	canDrawGrid = true;
-	camPos.x = 200;
+	camPos.x = 0;
 	camPos.y = 100;
-	camPos.z = 50;
+	camPos.z = 150;
 	camLookAt.x = 0;		camUpDir.x = 0;
 	camLookAt.y = 0;		camUpDir.y = 1;
 	camLookAt.z = 0;		camUpDir.z = 0;
@@ -612,7 +991,24 @@ void init() {
 	GLfloat ambient_day[] = { .6, .6, .6, 1.0 };
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient_day);
 
-	setupDiffuseLightEffect();
+	//setupDiffuseLightEffect();
+		//effect of local light source: point diffuse light
+	/**/
+	// GLfloat position[] = {-10.0, -10.0, 5.0, 1.0}; Positioned at (-10, -10, 5)
+
+	//object being illuminated
+	GLfloat mat_ambient[] = { 0.0, 0.0, 1.0, 1.0 };
+	GLfloat mat_diffuse[] = { 0.0, 0.0, 1.0, 1.0 };
+	GLfloat mat_specular[] = { 0.5, 0.5, 0.5, 1.0 }; //equal to the light source
+	GLfloat low_shininess[] = { 5.0 };
+	GLfloat mid_shininess[] = { 50.0 };
+	GLfloat high_shininess[] = { 100.0 };
+	GLfloat unset[] = { 0,0,0,1 };
+	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+	glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
+	glMaterialfv(GL_FRONT, GL_EMISSION, unset);
 
 	glEnable(GL_NORMALIZE); //Automatically normalize normals needed by the illumination model
 	glEnable(GL_LIGHTING);
@@ -785,11 +1181,11 @@ Cylinder parseCylinder(char objLines[15][30]) {
 	return cy;
 }
 
-Point3D parseLightSource(char* line){
+Point3f parseLightSource(char* line){
 	float x, y, z;
 	char garbage[30];
 	sscanf(line, "%s %f %f %f", &garbage, &x, &y, &z);
-	return Point3D(x,y,z);
+	return Point3f(x,y,z);
 }
 
 void parseSDLFile() {
@@ -814,7 +1210,7 @@ void parseSDLFile() {
 		else if (line[0] == 'l' && line[1] == 'i' && line[2] == 'g') {
 			float x, y, z;
 			sscanf(line, "%s %f %f %f", &garbage, &x, &y, &z);
-			lightSources.push_back(Point3D(x, y, z));
+			lightSources.push_back(Point3f(x, y, z));
 		}
 		else {
 			// Parse light
