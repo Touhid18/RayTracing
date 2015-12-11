@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual C++ Express 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracing", "RayTracing\RayTracing.vcproj", "{7901140F-15DF-4D54-9641-8641E5D5FA34}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7901140F-15DF-4D54-9641-8641E5D5FA34}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7901140F-15DF-4D54-9641-8641E5D5FA34}.Debug|Win32.Build.0 = Debug|Win32
+		{7901140F-15DF-4D54-9641-8641E5D5FA34}.Release|Win32.ActiveCfg = Release|Win32
+		{7901140F-15DF-4D54-9641-8641E5D5FA34}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
