@@ -171,27 +171,31 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\3_RayTracing\RayTracing\RayTracing\RayTracing\CheckerBoard.cpp"
+				RelativePath=".\CheckerBoard.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\3_RayTracing\RayTracing\RayTracing\RayTracing\Cylinder.cpp"
+				RelativePath=".\Cylinder.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\3_RayTracing\RayTracing\RayTracing\RayTracing\RayTracing.cpp"
+				RelativePath=".\RayTracing.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\3_RayTracing\RayTracing\RayTracing\RayTracing\Shape.cpp"
+				RelativePath=".\Shape.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\3_RayTracing\RayTracing\RayTracing\RayTracing\Sphere.cpp"
+				RelativePath=".\Sphere.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\3_RayTracing\RayTracing\RayTracing\RayTracing\Triangle.cpp"
+				RelativePath=".\stdafx.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\Triangle.cpp"
 				>
 			</File>
 		</Filter>
@@ -201,27 +205,35 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\3_RayTracing\RayTracing\RayTracing\RayTracing\CheckerBoard.h"
+				RelativePath=".\CheckerBoard.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\3_RayTracing\RayTracing\RayTracing\RayTracing\Cylinder.h"
+				RelativePath=".\Cylinder.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\3_RayTracing\RayTracing\RayTracing\RayTracing\RayTracing.h"
+				RelativePath=".\RayTracing.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\3_RayTracing\RayTracing\RayTracing\RayTracing\Shape.h"
+				RelativePath=".\Shape.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\3_RayTracing\RayTracing\RayTracing\RayTracing\Sphere.h"
+				RelativePath=".\Sphere.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\3_RayTracing\RayTracing\RayTracing\RayTracing\Triangle.h"
+				RelativePath=".\stdafx.h"
+				>
+			</File>
+			<File
+				RelativePath=".\targetver.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Triangle.h"
 				>
 			</File>
 		</Filter>
